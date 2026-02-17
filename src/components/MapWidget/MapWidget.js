@@ -5,11 +5,16 @@ import MapAutoZoomer from './MapAutoZoomer';
 import LocationList, { voxLocations } from './LocationList';
 import { BlueIcon } from './MapIcons';
 import CustomMarker from './CustomMarker';
+import NearbyLocations from './NearbyLocations';
+import './MapWidget.css';
 
 const MapWidget = () => {
   const [textInput, setTextInput] = useState('');
   const [selectedCinemas, setSelectedCinemas] = useState(voxLocations);
   const [clickedLocation, setClickedLocation] = useState(null);
+  const [locationAddress, setLocationAddress] = useState('');
+  const [nearbyLocations, setNearbyLocations] = useState([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   const dropdownRef = useRef(null);
 
   const apiKey = process.env.REACT_APP_THUNDERFOREST_API_KEY;
@@ -24,16 +29,22 @@ const MapWidget = () => {
       window.clearLocationListSelections();
     }
     setClickedLocation(null);
+    setLocationAddress('');
+    setNearbyLocations([]);
   };
 
   const handleTextSearch = async () => {
     if (!textInput) return;
     try {
       const res = await axios.get(`https://nominatim.openstreetmap.org/search`, {
-        params: { format: 'json', q: textInput },
-        headers: { 'User-Agent': 'CinemaApp/1.0' }
+        params: { format: 'json', q: textInput }
       });
       if (res.data.length > 0) {
+        // Clear pinned info when doing text search
+        setClickedLocation(null);
+        setLocationAddress('');
+        setNearbyLocations([]);
+
         const { lat, lon, display_name } = res.data[0];
         setSelectedCinemas([{
           name: display_name.split(',')[0],
@@ -46,9 +57,73 @@ const MapWidget = () => {
 
   function LocationMarker() {
     const map = useMapEvents({
-      click(e) {
+      async click(e) {
+        const { lat, lng } = e.latlng;
         setClickedLocation(e.latlng);
+        setLocationAddress('Fetching address...');
         map.flyTo(e.latlng, map.getZoom());
+
+        try {
+
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await response.json();
+          if (data && data.display_name) {
+            setLocationAddress(data.display_name);
+          } else {
+            setLocationAddress('Address not found');
+          }
+
+
+          setNearbyLoading(true);
+          setNearbyLocations([]);
+
+          const radius = 0.015;
+          const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
+
+          const categories = ['restaurant', 'cafe', 'shop', 'mall', 'residential', 'commercial'];
+
+          try {
+            const fetchPromises = categories.map(cat =>
+              fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5`)
+                .then(res => res.json())
+            );
+
+            const resultsArray = await Promise.all(fetchPromises);
+            const combinedData = resultsArray.flat();
+
+            if (combinedData.length > 0) {
+              const currentName = data.display_name ? data.display_name.split(',')[0].trim().toLowerCase() : '';
+
+              const uniquePlaces = [];
+              const seenNames = new Set();
+
+              combinedData.forEach(item => {
+                const name = item.display_name.split(',')[0].trim();
+                const address = item.display_name.split(',').slice(1, 3).join(',').trim();
+
+                if (!seenNames.has(name.toLowerCase()) && name.toLowerCase() !== currentName) {
+                  uniquePlaces.push({
+                    name: name,
+                    type: (item.type || item.class || 'place').replace(/_/g, ' '),
+                    address: address
+                  });
+                  seenNames.add(name.toLowerCase());
+                }
+              });
+
+              setNearbyLocations(uniquePlaces.slice(0, 12));
+            }
+          } catch (err) {
+            console.error("Nearby search error:", err);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          setLocationAddress('Location identified (Address lookup failed)');
+        } finally {
+          setNearbyLoading(false);
+        }
+
+
       },
     });
 
@@ -56,8 +131,8 @@ const MapWidget = () => {
       <CustomMarker position={clickedLocation}>
         <Popup>
           <strong>Pinned Location</strong><br />
-          Lat: {clickedLocation.lat.toFixed(4)}<br />
-          Lng: {clickedLocation.lng.toFixed(4)}
+          {locationAddress || 'Loading...'}<br />
+          <small>{clickedLocation.lat.toFixed(4)}, {clickedLocation.lng.toFixed(4)}</small>
         </Popup>
       </CustomMarker>
     );
@@ -76,15 +151,28 @@ const MapWidget = () => {
       </button>
 
       <LocationList
-        onSelectLocations={(locs) => setSelectedCinemas(locs.length ? locs : voxLocations)}
+        onSelectLocations={(locs) => {
+          setClickedLocation(null);
+          setLocationAddress('');
+          setNearbyLocations([]);
+          setSelectedCinemas(locs.length ? locs : voxLocations);
+        }}
         selectRef={dropdownRef}
 
       />
 
       {clickedLocation && (
-        <div style={{ margin: '10px 0', padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '4px', border: '1px solid #ddd' }}>
-          <strong>Pinned Location:</strong> {clickedLocation.lat.toFixed(6)}, {clickedLocation.lng.toFixed(6)}
+        <div style={{ margin: '10px 0', padding: '12px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #007bff', boxShadow: '0 2px 4px rgba(0,112,255,0.1)' }}>
+          <div style={{ color: '#0056b3', fontWeight: 'bold', marginBottom: '4px' }}>Pinned Address:</div>
+          <div style={{ fontSize: '14px', color: '#333', lineHeight: '1.4' }}>{locationAddress}</div>
+          <div style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+            Coordinates: {clickedLocation.lat.toFixed(6)}, {clickedLocation.lng.toFixed(6)}
+          </div>
         </div>
+      )}
+
+      {clickedLocation && (
+        <NearbyLocations locations={nearbyLocations} loading={nearbyLoading} />
       )}
 
       <div className="map-frame">
