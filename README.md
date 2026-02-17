@@ -43,7 +43,11 @@ A React-based web application that allows users to explore transport networks an
    npm start
    ```
 
+<<<<<<< HEAD
 ##  Project Structure
+=======
+## Project Structure
+>>>>>>> a01adaa97ea845694bf2024adb29d68cb5523a03
 
 ```text
 src/
@@ -58,7 +62,11 @@ src/
 └── index.js                  # React DOM rendering
 ```
 
+<<<<<<< HEAD
 ##  Functionalities
+=======
+## Functionalities
+>>>>>>> a01adaa97ea845694bf2024adb29d68cb5523a03
 
 ### Searching
 Type a location in the search bar and click **Search**. The application will use Nominatim to find the first match and center the map on it.
