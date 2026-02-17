@@ -1,8 +1,4 @@
-import React from 'react';
-
-
-
-
+import React, {useEffect} from 'react';
 const voxLocations = [
   { name: "VOX Cinemas - Mall of the Emirates", lat: 25.1181, lng: 55.2006 },
   { name: "VOX Cinemas - City Centre Mirdif", lat: 25.2144, lng: 55.4075 },
@@ -27,22 +23,28 @@ const voxLocations = [
   { name: "VOX Cinemas - City Centre Fujairah", lat: 25.1205, lng: 56.3261 }
 ];
 
-const LocationList = ({ onSelectLocations }) => {
+const LocationList = ({ onSelectLocations, selectRef}) => {
   const handleChange = (e) => {
-    // Collect all selected options into an array
     const selectedOptions = Array.from(e.target.selectedOptions).map(opt => 
       voxLocations.find(loc => loc.name === opt.value)
     );
     onSelectLocations(selectedOptions);
   };
-
+ useEffect(() => {
+    window.clearLocationListSelections = () => {
+      if (selectRef?.current) {
+        selectRef.current.selectedIndex = -1; 
+        selectRef.current.value = '';
+      }
+    };
+  }, [selectRef]);
   return (
     <div className="dropdown-section">
       <p style={{ fontSize: '12px', margin: '5px 0', color: '#555' }}>
-        Hold <strong>Ctrl (Windows)</strong> or <strong>Cmd (Mac)</strong> to select multiple:
       </p>
       <select 
         multiple 
+        ref={selectRef}
         className="location-dropdown" 
         style={{ width: '100%', height: '100px', padding: '5px' }}
         onChange={handleChange}
