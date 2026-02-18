@@ -80,11 +80,11 @@ const MapWidget = () => {
           const radius = 0.015;
           const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
 
-          const categories = ['restaurant', 'cafe', 'shop', 'mall', 'residential', 'commercial'];
+          const categories = ['mall', 'shops', 'residential', 'commercial','residential', 'house', 'villa','apartment', 'office building','commercial building'];
 
           try {
             const fetchPromises = categories.map(cat =>
-              fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5`)
+              fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5&layer=poi`)
                 .then(res => res.json())
             );
 
