@@ -17,7 +17,7 @@ const MapWidget = () => {
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  const apiKey = process.env.REACT_APP_THUNDERFOREST_API_KEY;
+  const API_BASE_URL = 'http://localhost:8000/api';
 
   const handleClear = () => {
     setTextInput('');
@@ -36,11 +36,10 @@ const MapWidget = () => {
   const handleTextSearch = async () => {
     if (!textInput) return;
     try {
-      const res = await axios.get(`https://nominatim.openstreetmap.org/search`, {
-        params: { format: 'json', q: textInput }
+      const res = await axios.get(`${API_BASE_URL}/search`, {
+        params: { q: textInput }
       });
       if (res.data.length > 0) {
-        // Clear pinned info when doing text search
         setClickedLocation(null);
         setLocationAddress('');
         setNearbyLocations([]);
@@ -65,7 +64,7 @@ const MapWidget = () => {
 
         try {
 
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const response = await fetch(`${API_BASE_URL}/reverse?lat=${lat}&lon=${lng}`);
           const data = await response.json();
           if (data && data.display_name) {
             setLocationAddress(data.display_name);
@@ -80,11 +79,11 @@ const MapWidget = () => {
           const radius = 0.015;
           const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
 
-          const categories = ['mall', 'shops', 'residential', 'commercial','residential', 'house', 'villa','apartment', 'office building','commercial building'];
+          const categories = ['mall', 'shops', 'residential', 'commercial', 'residential', 'house', 'villa', 'apartment', 'office building', 'commercial building'];
 
           try {
             const fetchPromises = categories.map(cat =>
-              fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5&layer=poi`)
+              fetch(`${API_BASE_URL}/nearby?cat=${cat}&viewbox=${viewbox}`)
                 .then(res => res.json())
             );
 
@@ -177,7 +176,7 @@ const MapWidget = () => {
 
       <div className="map-frame">
         <MapContainer center={[25.2048, 55.2708]} zoom={11} style={{ height: '400px', width: '100%' }}>
-          <TileLayer url={`https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=${apiKey}`} />
+          <TileLayer url="http://localhost:8000/api/tiles/{z}/{x}/{y}" />
 
           <MapAutoZoomer selectedLocations={selectedCinemas}>
             {selectedCinemas.map((loc, i) => (
