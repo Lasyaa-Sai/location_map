@@ -17,7 +17,7 @@ const MapWidget = () => {
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  const apiKey = process.env.REACT_APP_THUNDERFOREST_API_KEY;
+  const apiKey = process.env.REACT_APP_LOCATIONIQ_API_KEY;
 
   const handleClear = () => {
     setTextInput('');
@@ -36,8 +36,8 @@ const MapWidget = () => {
   const handleTextSearch = async () => {
     if (!textInput) return;
     try {
-      const res = await axios.get(`https://nominatim.openstreetmap.org/search`, {
-        params: { format: 'json', q: textInput }
+      const res = await axios.get(`https://us1.locationiq.com/v1/search.php`, {
+        params: { key: apiKey, q: textInput, format: 'json', 'accept-language': 'en' }
       });
       if (res.data.length > 0) {
         // Clear pinned info when doing text search
@@ -65,7 +65,7 @@ const MapWidget = () => {
 
         try {
 
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const response = await fetch(`https://us1.locationiq.com/v1/reverse.php?key=${apiKey}&lat=${lat}&lon=${lng}&format=json&accept-language=en`);
           const data = await response.json();
           if (data && data.display_name) {
             setLocationAddress(data.display_name);
@@ -80,11 +80,11 @@ const MapWidget = () => {
           const radius = 0.015;
           const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
 
-          const categories = ['mall', 'shops', 'residential', 'commercial','residential', 'house', 'villa','apartment', 'office building','commercial building'];
+          const categories = ['mall', 'shops', 'residential', 'commercial', 'residential', 'house', 'villa', 'apartment', 'office building', 'commercial building'];
 
           try {
             const fetchPromises = categories.map(cat =>
-              fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5&layer=poi`)
+              fetch(`https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5&format=json&accept-language=en`)
                 .then(res => res.json())
             );
 
@@ -177,7 +177,10 @@ const MapWidget = () => {
 
       <div className="map-frame">
         <MapContainer center={[25.2048, 55.2708]} zoom={11} style={{ height: '400px', width: '100%' }}>
-          <TileLayer url={`https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=${apiKey}`} />
+          <TileLayer
+            url={`https://{s}-tiles.locationiq.com/v2/obk/r/{z}/{x}/{y}.png?key=${apiKey}`}
+            attribution='&copy; <a href="https://locationiq.com">LocationIQ</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          />
 
           <MapAutoZoomer selectedLocations={selectedCinemas}>
             {selectedCinemas.map((loc, i) => (
