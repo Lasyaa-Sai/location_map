@@ -80,14 +80,14 @@ const MapWidget = () => {
           const radius = 0.015;
           const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
 
-          const categories = ['mall', 'shops', 'residential', 'commercial', 'residential', 'house', 'villa', 'apartment', 'office building', 'commercial building'];
+          const categories = ['residential', 'commercial', 'office building', 'commercial building'];
 
           try {
             const fetchPromises = categories.map(cat =>
-              fetch(`https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${cat}&viewbox=${viewbox}&bounded=1&limit=5&format=json&accept-language=en`)
-                .then(res => res.json())
-            );
-
+    fetch(`https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${cat}&viewbox=${viewbox}&bounded=1&limit=3&format=json&accept-language=en`)
+      .then(res => res.ok ? res.json() : []) 
+      .catch(() => []) 
+  );
             const resultsArray = await Promise.all(fetchPromises);
             const combinedData = resultsArray.flat();
 
