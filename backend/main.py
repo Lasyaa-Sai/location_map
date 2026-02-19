@@ -51,7 +51,7 @@ async def tiles(z: int, x: int, y: int):
     if not THUNDERFOREST_API_KEY:
         return Response(status_code=500, content="API Key not configured in backend")
     
-    url = f"https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey={THUNDERFOREST_API_KEY}"
+    url = f"https://tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey={THUNDERFOREST_API_KEY}"
     try:
         response = await client.get(url, timeout=10)
         if response.status_code == 200:

@@ -79,7 +79,7 @@ const MapWidget = () => {
           const radius = 0.015;
           const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
 
-          const categories = ['mall', 'shops', 'residential', 'commercial', 'residential', 'house', 'villa', 'apartment', 'office building', 'commercial building'];
+          const categories = ['residential', 'commercial', 'residential', 'house', 'villa', 'apartment', 'office building', 'commercial building','mall', 'shops', ];
 
           try {
             const fetchPromises = categories.map(cat =>
