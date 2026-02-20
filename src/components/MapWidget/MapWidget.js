@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaf
 import axios from 'axios';
 import MapAutoZoomer from './MapAutoZoomer';
 import LocationList, { voxLocations } from './LocationList';
-import { BlueIcon } from './MapIcons';
+import { BlueIcon, RedIcon } from './MapIcons';
 import CustomMarker from './CustomMarker';
 import NearbyLocations from './NearbyLocations';
 import config, { add_api, get_tile_url } from '../../config';
@@ -47,7 +47,8 @@ const MapWidget = () => {
         setSelectedCinemas([{
           name: display_name.split(',')[0],
           lat: parseFloat(lat),
-          lng: parseFloat(lon)
+          lng: parseFloat(lon),
+          isSearch: true
         }]);
       }
     } catch (err) { console.error(err); }
@@ -157,7 +158,6 @@ const MapWidget = () => {
         <button onClick={handleTextSearch} className="search-btn">Search</button>
       </div>
 
-      {/* Clear Button - This now works correctly */}
       <button onClick={handleClear} className="clear-btn" style={{ margin: '10px 0', cursor: 'pointer' }}>
         Clear Selection
       </button>
@@ -196,7 +196,7 @@ const MapWidget = () => {
 
           <MapAutoZoomer selectedLocations={selectedCinemas}>
             {selectedCinemas.map((loc, i) => (
-              <Marker key={i} position={[loc.lat, loc.lng]} icon={BlueIcon}>
+              <Marker key={i} position={[loc.lat, loc.lng]} icon={loc.isSearch ? RedIcon : BlueIcon}>
                 <Popup><strong>{loc.name}</strong></Popup>
               </Marker>
             ))}
