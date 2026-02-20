@@ -6,6 +6,7 @@ import LocationList, { voxLocations } from './LocationList';
 import { BlueIcon } from './MapIcons';
 import CustomMarker from './CustomMarker';
 import NearbyLocations from './NearbyLocations';
+import config, { add_api, get_tile_url } from '../../config';
 import './MapWidget.css';
 
 const MapWidget = () => {
@@ -17,7 +18,6 @@ const MapWidget = () => {
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  const apiKey = process.env.REACT_APP_LOCATIONIQ_API_KEY;
 
   const handleClear = () => {
     setTextInput('');
@@ -36,11 +36,9 @@ const MapWidget = () => {
   const handleTextSearch = async () => {
     if (!textInput) return;
     try {
-      const res = await axios.get(`https://us1.locationiq.com/v1/search.php`, {
-        params: { key: apiKey, q: textInput, format: 'json', 'accept-language': 'en' }
-      });
+      const url = add_api('search', { q: textInput });
+      const res = await axios.get(url);
       if (res.data.length > 0) {
-        // Clear pinned info when doing text search
         setClickedLocation(null);
         setLocationAddress('');
         setNearbyLocations([]);
@@ -64,8 +62,8 @@ const MapWidget = () => {
         map.flyTo(e.latlng, map.getZoom());
 
         try {
-
-          const response = await fetch(`https://us1.locationiq.com/v1/reverse.php?key=${apiKey}&lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+          const url = add_api('reverse', { lat, lon: lng });
+          const response = await fetch(url);
           const data = await response.json();
           if (data && data.display_name) {
             setLocationAddress(data.display_name);
@@ -81,15 +79,29 @@ const MapWidget = () => {
           const viewbox = `${lng - radius},${lat + radius},${lng + radius},${lat - radius}`;
 
           const categories = ['residential', 'commercial', 'office building', 'commercial building'];
+          const combinedData = [];
 
           try {
-            const fetchPromises = categories.map(cat =>
-    fetch(`https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${cat}&viewbox=${viewbox}&bounded=1&limit=3&format=json&accept-language=en`)
-      .then(res => res.ok ? res.json() : []) 
-      .catch(() => []) 
-  );
-            const resultsArray = await Promise.all(fetchPromises);
-            const combinedData = resultsArray.flat();
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            for (const cat of categories) {
+              const url = add_api('search', { q: cat, viewbox, bounded: 1, limit: 3 });
+              try {
+                const searchRes = await fetch(url);
+                if (searchRes.status === 429) {
+                  console.warn(`Rate limit hit for category: ${cat}`);
+                  await sleep(1000);
+                  continue;
+                }
+                const searchData = await searchRes.json();
+                if (Array.isArray(searchData)) {
+                  combinedData.push(...searchData);
+                }
+              } catch (err) {
+                console.error(`Error fetching category ${cat}:`, err);
+              }
+              await sleep(600);
+            }
 
             if (combinedData.length > 0) {
               const currentName = data.display_name ? data.display_name.split(',')[0].trim().toLowerCase() : '';
@@ -178,8 +190,8 @@ const MapWidget = () => {
       <div className="map-frame">
         <MapContainer center={[25.2048, 55.2708]} zoom={11} style={{ height: '400px', width: '100%' }}>
           <TileLayer
-            url={`https://{s}-tiles.locationiq.com/v2/obk/r/{z}/{x}/{y}.png?key=${apiKey}`}
-            attribution='&copy; <a href="https://locationiq.com">LocationIQ</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url={get_tile_url()}
+            attribution={config.attribution}
           />
 
           <MapAutoZoomer selectedLocations={selectedCinemas}>
