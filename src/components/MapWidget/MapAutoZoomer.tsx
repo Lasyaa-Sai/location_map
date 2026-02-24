@@ -13,10 +13,28 @@ const MapAutoZoomer: React.FC<MapAutoZoomerProps> = ({ selectedLocations, childr
 
     useEffect(() => {
         if (featureGroupRef.current && selectedLocations.length > 0) {
-            const bounds = featureGroupRef.current.getBounds();
-            if (bounds.isValid()) {
-                map.fitBounds(bounds, { padding: [50, 50] });
-            }
+            // Safety check: Filter out any items with missing or NaN coordinates
+            const validLocations = selectedLocations.filter(loc =>
+                loc && typeof loc.lat === 'number' && typeof loc.lng === 'number' &&
+                !isNaN(loc.lat) && !isNaN(loc.lng)
+            );
+
+            if (validLocations.length === 0) return;
+
+            // Wait a frame for markers to be actually added to the DOM/FeatureGroup
+            const frame = requestAnimationFrame(() => {
+                if (featureGroupRef.current) {
+                    const bounds = featureGroupRef.current.getBounds();
+                    if (bounds.isValid()) {
+                        try {
+                            map.fitBounds(bounds, { padding: [50, 50], animate: true });
+                        } catch (e) {
+                            console.warn('MapAutoZoomer: fitBounds failed', e);
+                        }
+                    }
+                }
+            });
+            return () => cancelAnimationFrame(frame);
         }
     }, [selectedLocations, map]);
 

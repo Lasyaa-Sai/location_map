@@ -1,22 +1,23 @@
 .widget-container {
   background: hsl(0, 0%, 100%);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 10px 15px;
   margin: 5px auto;
-  
+
 }
+
 .input-group {
   display: flex;
   gap: 10px;
-  align-items: end; /* Aligns input bottom with button */
+  align-items: end;
   width: 100%;
 }
 
 .input-group input {
-  flex: 1; /* Takes all available space */
-  min-width: 0; /* Allows shrinking */
-  height: 32px; /* Matches dropdown height */
+  flex: 1;
+  min-width: 0;
+  height: 32px;
   padding: 5px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -41,14 +42,35 @@
   border: 1px solid #ddd;
 }
 
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .widget-container {
   max-width: 900px;
   margin: 20px auto;
   background: white;
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
+
 .search-btn {
   padding: 10px 20px;
   background: #007bff;

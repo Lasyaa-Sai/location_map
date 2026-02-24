@@ -1,15 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import axios from 'axios';
 import MapAutoZoomer from './MapAutoZoomer';
 import LocationList, { voxLocations, Location } from './LocationList';
 import { BlueIcon, RedIcon } from './MapIcons';
 import CustomMarker from './CustomMarker';
 import NearbyLocations from './NearbyLocations';
-import config, { add_api, get_tile_url } from '../../config';
-import { OSM } from '../../services/Maps';
+import config, { get_tile_url } from '../../config';
+import { IMapProvider, MapProviderConfig, MapSearchResult, MapReverseResult, MapNearbyResult } from '../../types/mapInterface';
+import { OSM, GoogleMaps } from '../../services/Maps';
+import { GoogleMutantLayer } from './GoogleMutantLayer';
 import './MapWidget.css';
-import { LatLng } from 'leaflet';
+import L, { LatLng } from 'leaflet';
 
 const MapWidget: React.FC = () => {
     const [textInput, setTextInput] = useState<string>('');
@@ -18,9 +19,22 @@ const MapWidget: React.FC = () => {
     const [locationAddress, setLocationAddress] = useState<string>('');
     const [nearbyLocations, setNearbyLocations] = useState<any[]>([]);
     const [nearbyLoading, setNearbyLoading] = useState<boolean>(false);
+    const [googleReady, setGoogleReady] = useState<boolean>(!!(window as any).google);
+    const [pluginReady, setPluginReady] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLSelectElement>(null);
+    React.useEffect(() => {
+        const checkReady = setInterval(() => {
+            const hasGoogle = !!(window as any).google?.maps?.Map;
+            if (hasGoogle) {
+                setPluginReady(true);
+                setGoogleReady(true);
+                clearInterval(checkReady);
+            }
+        }, 300);
+        return () => clearInterval(checkReady);
+    }, []);
 
-    const mapsService = new OSM();
+    const mapsService = config.name === 'google' ? new GoogleMaps(config) : new OSM(config);
 
     const handleClear = () => {
         setTextInput('');
@@ -39,17 +53,24 @@ const MapWidget: React.FC = () => {
     const handleTextSearch = async () => {
         if (!textInput) return;
         try {
-            const results = await mapsService.search(config, textInput);
+            const results = await mapsService.search(textInput);
             if (results.length > 0) {
+                const { lat, lng, name } = results[0];
+
+                // Final safety check to prevent NaN if API returns bad data
+                if (isNaN(lat) || isNaN(lng)) {
+                    console.warn('Search returned invalid coordinates:', results[0]);
+                    return;
+                }
+
                 setClickedLocation(null);
                 setLocationAddress('');
                 setNearbyLocations([]);
 
-                const { lat, lon, display_name } = results[0];
                 setSelectedCinemas([{
-                    name: display_name.split(',')[0],
-                    lat: parseFloat(lat),
-                    lng: parseFloat(lon),
+                    name: name.split(',')[0],
+                    lat: Number(lat),
+                    lng: Number(lng),
                     isSearch: true
                 }]);
             }
@@ -65,13 +86,13 @@ const MapWidget: React.FC = () => {
                 map.flyTo(e.latlng, map.getZoom());
 
                 try {
-                    const result = await mapsService.reverse(config, lat, lng);
+                    const result = await mapsService.reverse(lat, lng);
                     setLocationAddress(result.address);
 
                     setNearbyLoading(true);
                     setNearbyLocations([]);
 
-                    const nearby = await mapsService.nearby(config, lat, lng);
+                    const nearby = await mapsService.nearby(lat, lng);
                     setNearbyLocations(nearby);
                 } catch (error) {
                     console.error('Error:', error);
@@ -129,21 +150,34 @@ const MapWidget: React.FC = () => {
             )}
 
             <div className="map-frame">
-                <MapContainer center={[25.2048, 55.2708]} zoom={11} style={{ height: '400px', width: '100%' }}>
-                    <TileLayer
-                        url={get_tile_url()}
-                        attribution={config.attribution}
-                    />
+                {config.name === 'google' && (!googleReady || !pluginReady) ? (
+                    <div style={{ height: '400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div className="spinner"></div>
+                            <div style={{ marginTop: '10px', color: '#666' }}>Initializing Google Maps...</div>
+                        </div>
+                    </div>
+                ) : (
+                    <MapContainer center={[25.2048, 55.2708]} zoom={11} style={{ height: '400px', width: '100%', borderRadius: '8px' }}>
+                        {config.name === 'google' ? (
+                            <GoogleMutantLayer type="roadmap" />
+                        ) : (
+                            <TileLayer
+                                url={get_tile_url()}
+                                attribution={config.attribution}
+                            />
+                        )}
 
-                    <MapAutoZoomer selectedLocations={selectedCinemas}>
-                        {selectedCinemas.map((loc, i) => (
-                            <Marker key={i} position={[loc.lat, loc.lng]} icon={loc.isSearch ? RedIcon : BlueIcon}>
-                                <Popup><strong>{loc.name}</strong></Popup>
-                            </Marker>
-                        ))}
-                    </MapAutoZoomer>
-                    <LocationMarker />
-                </MapContainer>
+                        <MapAutoZoomer selectedLocations={selectedCinemas}>
+                            {selectedCinemas.map((loc, i) => (
+                                <Marker key={i} position={[loc.lat, loc.lng]} icon={loc.isSearch ? RedIcon : BlueIcon}>
+                                    <Popup><strong>{loc.name}</strong></Popup>
+                                </Marker>
+                            ))}
+                        </MapAutoZoomer>
+                        <LocationMarker />
+                    </MapContainer>
+                )}
             </div>
         </div>
     );

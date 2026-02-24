@@ -1,7 +1,5 @@
 import L from 'leaflet';
-// @ts-ignore
 import icon from 'leaflet/dist/images/marker-icon.png';
-// @ts-ignore
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 export const BlueIcon = L.icon({

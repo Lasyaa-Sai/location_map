@@ -1,12 +1,6 @@
-export interface ProviderConfig {
-    name: string;
-    baseUrl: string;
-    tileUrl: string;
-    apiKey?: string;
-    attribution: string;
-    suffix: string;
-    keyParam: string;
-}
+import { MapProviderConfig } from './types/mapInterface';
+
+export type ProviderConfig = MapProviderConfig;
 
 const provider = process.env.REACT_APP_MAP_PROVIDER || 'thunderforest';
 
@@ -24,13 +18,24 @@ switch (provider) {
             keyParam: 'key'
         };
         break;
+    case 'google':
+        providerConfig = {
+            name: 'google',
+            baseUrl: 'https://maps.googleapis.com/maps/api',
+            tileUrl: '', // Google Maps doesn't use simple tile URLs for Leaflet easily without plugins
+            apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+            attribution: '&copy; Google Maps',
+            suffix: '',
+            keyParam: 'key'
+        };
+        break;
     case 'nominatim':
         providerConfig = {
             name: 'nominatim',
             baseUrl: 'https://nominatim.openstreetmap.org',
             tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             apiKey: '',
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            attribution: process.env.REACT_APP_MAP_ATTRIBUTION || '' ,
             suffix: '',
             keyParam: ''
         };
@@ -41,7 +46,7 @@ switch (provider) {
             baseUrl: 'https://nominatim.openstreetmap.org',
             tileUrl: 'https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png',
             apiKey: process.env.REACT_APP_THUNDERFOREST_API_KEY,
-            attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            attribution: process.env.REACT_APP_MAP_ATTRIBUTION || '' ,
             suffix: '',
             keyParam: ''
         };
@@ -74,7 +79,7 @@ export const get_tile_url = (): string => {
     } else if (config.name === 'thunderforest') {
         return `${config.tileUrl}?apikey=${config.apiKey}`;
     }
-    return config.tileUrl;
+    return config.tileUrl || '';
 };
 
 export default config;

@@ -1,14 +1,9 @@
 import React from 'react';
+import { MapNearbyResult } from '../../types/mapInterface';
 import './NearbyLocations.css';
 
-interface Location {
-    name?: string;
-    type?: string;
-    address?: string;
-}
-
 interface NearbyLocationsProps {
-    locations: Location[];
+    locations: MapNearbyResult[];
     loading: boolean;
 }
 
