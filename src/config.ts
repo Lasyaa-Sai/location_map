@@ -22,11 +22,12 @@ switch (provider) {
         providerConfig = {
             name: 'google',
             baseUrl: 'https://maps.googleapis.com/maps/api',
-            tileUrl: '', // Google Maps doesn't use simple tile URLs for Leaflet easily without plugins
+            tileUrl: 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
             apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
             attribution: '&copy; Google Maps',
             suffix: '',
-            keyParam: 'key'
+            keyParam: 'key',
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         };
         break;
     case 'nominatim':
@@ -35,9 +36,10 @@ switch (provider) {
             baseUrl: 'https://nominatim.openstreetmap.org',
             tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             apiKey: '',
-            attribution: process.env.REACT_APP_MAP_ATTRIBUTION || '' ,
+            attribution: process.env.REACT_APP_MAP_ATTRIBUTION || '',
             suffix: '',
-            keyParam: ''
+            keyParam: '',
+            subdomains: ['a', 'b', 'c']
         };
         break;
     default:
@@ -46,9 +48,10 @@ switch (provider) {
             baseUrl: 'https://nominatim.openstreetmap.org',
             tileUrl: 'https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png',
             apiKey: process.env.REACT_APP_THUNDERFOREST_API_KEY,
-            attribution: process.env.REACT_APP_MAP_ATTRIBUTION || '' ,
+            attribution: process.env.REACT_APP_MAP_ATTRIBUTION || '',
             suffix: '',
-            keyParam: ''
+            keyParam: '',
+            subdomains: ['a', 'b', 'c']
         };
 }
 

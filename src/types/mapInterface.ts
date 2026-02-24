@@ -7,6 +7,7 @@ export interface MapProviderConfig {
     attribution: string;
     suffix: string;
     keyParam: string;
+    subdomains?: string[];
 }
 
 export interface MapSearchResult {
