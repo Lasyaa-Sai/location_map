@@ -5,13 +5,15 @@ import L from 'leaflet';
 interface MapAutoZoomerProps {
     selectedLocations: any[];
     children?: ReactNode;
+    activeFocus?: boolean;
 }
 
-const MapAutoZoomer: React.FC<MapAutoZoomerProps> = ({ selectedLocations, children }) => {
+const MapAutoZoomer: React.FC<MapAutoZoomerProps> = ({ selectedLocations, children, activeFocus }) => {
     const featureGroupRef = useRef<L.FeatureGroup>(null);
     const map = useMap();
 
     useEffect(() => {
+        if (activeFocus) return;
         if (featureGroupRef.current && selectedLocations.length > 0) {
             // Safety check: Filter out any items with missing or NaN coordinates
             const validLocations = selectedLocations.filter(loc =>

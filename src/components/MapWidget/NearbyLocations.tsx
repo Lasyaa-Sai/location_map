@@ -5,9 +5,10 @@ import './NearbyLocations.css';
 interface NearbyLocationsProps {
     locations: MapNearbyResult[];
     loading: boolean;
+    onSelect: (loc: MapNearbyResult) => void;
 }
 
-const NearbyLocations: React.FC<NearbyLocationsProps> = ({ locations, loading }) => {
+const NearbyLocations: React.FC<NearbyLocationsProps> = ({ locations, loading, onSelect }) => {
     if (loading) {
         return (
             <div className="nearby-container">
@@ -37,7 +38,7 @@ const NearbyLocations: React.FC<NearbyLocationsProps> = ({ locations, loading })
             </div>
             <ul className="nearby-list">
                 {locations.map((loc, index) => (
-                    <li key={index} className="nearby-item">
+                    <li key={index} className="nearby-item" onClick={() => onSelect(loc)} style={{ cursor: 'pointer' }}>
                         <div className="nearby-name">{loc.name || 'Unnamed Location'}</div>
                         <div className="nearby-type">{loc.type || 'Point of Interest'}</div>
                         <div className="nearby-address">{loc.address}</div>

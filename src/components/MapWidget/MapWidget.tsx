@@ -1,22 +1,25 @@
 import React, { useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import MapAutoZoomer from './MapAutoZoomer';
 import LocationList, { voxLocations, Location } from './LocationList';
-import { BlueIcon, RedIcon } from './MapIcons';
+import { BlueIcon, RedIcon, GreenIcon } from './MapIcons';
 import CustomMarker from './CustomMarker';
 import NearbyLocations from './NearbyLocations';
 import config, { get_tile_url } from '../../config';
 import { OSM, GoogleMaps } from '../../services/Maps';
 import './MapWidget.css';
 import { LatLng } from 'leaflet';
+import { MapNearbyResult } from '../../types/mapInterface';
 
 const MapWidget: React.FC = () => {
     const [textInput, setTextInput] = useState<string>('');
     const [selectedCinemas, setSelectedCinemas] = useState<(Location & { isSearch?: boolean })[]>(voxLocations);
     const [clickedLocation, setClickedLocation] = useState<LatLng | null>(null);
     const [locationAddress, setLocationAddress] = useState<string>('');
-    const [nearbyLocations, setNearbyLocations] = useState<any[]>([]);
+    const [nearbyLocations, setNearbyLocations] = useState<MapNearbyResult[]>([]);
     const [nearbyLoading, setNearbyLoading] = useState<boolean>(false);
+    const [selectedNearbyLocation, setSelectedNearbyLocation] = useState<MapNearbyResult | null>(null);
+    const [lastSelectionType, setLastSelectionType] = useState<'cinema' | 'search' | 'pin' | 'nearby' | null>(null);
     const dropdownRef = useRef<HTMLSelectElement>(null);
 
     const mapsService = config.name === 'google' ? new GoogleMaps(config) : new OSM(config);
@@ -27,6 +30,8 @@ const MapWidget: React.FC = () => {
         setClickedLocation(null);
         setLocationAddress('');
         setNearbyLocations([]);
+        setSelectedNearbyLocation(null);
+        setLastSelectionType(null);
         if (dropdownRef.current) dropdownRef.current.selectedIndex = -1;
     };
 
@@ -40,6 +45,7 @@ const MapWidget: React.FC = () => {
                     ...voxLocations,
                     { name: name.split(',')[0], lat, lng, isSearch: true }
                 ]);
+                setLastSelectionType('search');
             }
         } catch (err) { console.error(err); }
     };
@@ -48,8 +54,9 @@ const MapWidget: React.FC = () => {
         const map = useMapEvents({
             async click(e) {
                 setClickedLocation(e.latlng);
+                setSelectedNearbyLocation(null);
+                setLastSelectionType('pin');
                 setLocationAddress('Fetching address...');
-                map.flyTo(e.latlng, map.getZoom());
                 try {
                     const result = await mapsService.reverse(e.latlng.lat, e.latlng.lng);
                     setLocationAddress(result.address);
@@ -67,6 +74,23 @@ const MapWidget: React.FC = () => {
         ) : null;
     }
 
+    function MapFlyToController() {
+        const map = useMap();
+        React.useEffect(() => {
+            if (lastSelectionType === 'nearby' && selectedNearbyLocation) {
+                map.flyTo([selectedNearbyLocation.lat, selectedNearbyLocation.lng], 16);
+            } else if (lastSelectionType === 'pin' && clickedLocation) {
+                map.flyTo(clickedLocation, 16);
+            } else if (lastSelectionType === 'search') {
+                const searchLoc = selectedCinemas.find(c => c.isSearch);
+                if (searchLoc) {
+                    map.flyTo([searchLoc.lat, searchLoc.lng], 16);
+                }
+            }
+        }, [selectedNearbyLocation, clickedLocation, selectedCinemas, lastSelectionType, map]);
+        return null;
+    }
+
     return (
         <div className="widget-container">
             <div className="input-group">
@@ -78,7 +102,10 @@ const MapWidget: React.FC = () => {
 
             {/* Restored Cinema List Dropdown */}
             <LocationList
-                onSelectLocations={(locs) => setSelectedCinemas(locs.length ? locs : voxLocations)}
+                onSelectLocations={(locs) => {
+                    setSelectedCinemas(locs.length ? locs : voxLocations);
+                    setLastSelectionType('cinema');
+                }}
                 selectRef={dropdownRef}
             />
 
@@ -93,7 +120,14 @@ const MapWidget: React.FC = () => {
 
             {/* Nearby Locations List */}
             {clickedLocation && (
-                <NearbyLocations locations={nearbyLocations} loading={nearbyLoading} />
+                <NearbyLocations
+                    locations={nearbyLocations}
+                    loading={nearbyLoading}
+                    onSelect={(loc) => {
+                        setSelectedNearbyLocation(loc);
+                        setLastSelectionType('nearby');
+                    }}
+                />
             )}
 
             <div className="map-frame">
@@ -103,13 +137,22 @@ const MapWidget: React.FC = () => {
                         subdomains={config.subdomains || ['a', 'b', 'c']}
                         attribution={config.attribution}
                     />
-                    <MapAutoZoomer selectedLocations={selectedCinemas}>
+                    <MapAutoZoomer
+                        selectedLocations={selectedCinemas}
+                        activeFocus={!!lastSelectionType && lastSelectionType !== 'cinema'}
+                    >
                         {selectedCinemas.map((loc, i) => (
                             <Marker key={i} position={[loc.lat, loc.lng]} icon={loc.isSearch ? RedIcon : BlueIcon}>
                                 <Popup><strong>{loc.name}</strong></Popup>
                             </Marker>
                         ))}
                     </MapAutoZoomer>
+                    {selectedNearbyLocation && (
+                        <Marker position={[selectedNearbyLocation.lat, selectedNearbyLocation.lng]} icon={GreenIcon}>
+                            <Popup><strong>{selectedNearbyLocation.name}</strong><br />{selectedNearbyLocation.address}</Popup>
+                        </Marker>
+                    )}
+                    <MapFlyToController />
                     <LocationMarker />
                 </MapContainer>
             </div>

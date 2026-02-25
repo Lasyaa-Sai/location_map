@@ -25,6 +25,8 @@ export interface MapNearbyResult {
     name: string;
     type: string;
     address: string;
+    lat: number;
+    lng: number;
 }
 
 export interface IMapProvider {

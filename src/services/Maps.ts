@@ -62,7 +62,9 @@ export class GoogleMaps implements IMapProvider {
                     resolve(results.slice(0, 12).map(item => ({
                         name: item.name || 'Unnamed',
                         type: item.types?.[0]?.replace(/_/g, ' ') || 'place',
-                        address: item.vicinity || 'Unknown address'
+                        address: item.vicinity || 'Unknown address',
+                        lat: item.geometry?.location?.lat() || 0,
+                        lng: item.geometry?.location?.lng() || 0
                     })));
                 } else {
                     console.error('Google Nearby Error:', status);
@@ -159,7 +161,9 @@ export class OSM implements IMapProvider {
                             combinedData.push({
                                 name: name,
                                 type: (item.type || item.class || 'place').replace(/_/g, ' '),
-                                address: address
+                                address: address,
+                                lat: parseFloat(item.lat),
+                                lng: parseFloat(item.lon)
                             });
                             seenNames.add(name.toLowerCase());
                         }
